@@ -1,21 +1,33 @@
-# http://stackoverflow.com/questions/3118929/implementing-the-decorator-pattern-in-python
+#!/usr/bin/env python
+"""https://docs.python.org/2/library/functools.html#functools.wraps"""
+"""https://stackoverflow.com/questions/739654/how-can-i-make-a-chain-of-function-decorators-in-python/739665#739665"""
 
-class foo(object):
-    def f1(self):
-        print("original f1")
-    def f2(self):
-        print("original f2")
+from functools import wraps
 
-class foo_decorator(object):
-    def __init__(self, decoratee):
-        self._decoratee = decoratee
-    def f1(self):
-        print("decorated f1")
-        self._decoratee.f1()
-    def __getattr__(self, name):
-        return getattr(self._decoratee, name)
 
-u = foo()
-v = foo_decorator(u)
-v.f1()
-v.f2()
+def makebold(fn):
+    return getwrapped(fn, "b")
+
+
+def makeitalic(fn):
+    return getwrapped(fn, "i")
+
+
+def getwrapped(fn, tag):
+    @wraps(fn)
+    def wrapped():
+        return "<%s>%s</%s>" % (tag, fn(), tag)
+    return wrapped
+
+
+@makebold
+@makeitalic
+def hello():
+    """a decorated hello world"""
+    return "hello world"
+
+if __name__ == '__main__':
+    print('result:{}   name:{}   doc:{}'.format(hello(), hello.__name__, hello.__doc__))
+
+### OUTPUT ###
+# result:<b><i>hello world</i></b>   name:hello   doc:a decorated hello world

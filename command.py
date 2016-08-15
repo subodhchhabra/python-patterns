@@ -1,36 +1,56 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import os
+from os.path import lexists
 
 class MoveFileCommand(object):
+
     def __init__(self, src, dest):
         self.src = src
         self.dest = dest
 
     def execute(self):
-        self()
-        
-    def __call__(self):
-        print('renaming {} to {}'.format(self.src, self.dest))
-        os.rename(self.src, self.dest)
+        self.rename(self.src, self.dest)
 
     def undo(self):
-        print('renaming {} to {}'.format(self.dest, self.src))
-        os.rename(self.dest, self.src)
+        self.rename(self.dest, self.src)
+
+    def rename(self, src, dest):
+        print('renaming {} to {}'.format(src, dest))
+        os.rename(src, dest)
 
 
-if __name__ == "__main__":
-    undo_stack = []
-    ren1 = MoveFileCommand('foo.txt', 'bar.txt')
-    ren2 = MoveFileCommand('bar.txt', 'baz.txt')
+def main():
+    command_stack = []
 
     # commands are just pushed into the command stack
-    for cmd in ren1, ren2:
-        undo_stack.append(cmd)
+    command_stack.append(MoveFileCommand('foo.txt', 'bar.txt'))
+    command_stack.append(MoveFileCommand('bar.txt', 'baz.txt'))
 
-    # they can be executed later on will
-    for cmd in undo_stack:
-        cmd.execute()     # foo.txt is now renamed to baz.txt
+    # verify that none of the target files exist
+    assert(not lexists("foo.txt"))
+    assert(not lexists("bar.txt"))
+    assert(not lexists("baz.txt"))
+    try:
+        with open("foo.txt", "w"):  # Creating the file
+            pass
 
-    # and can also be undone on will
-    for cmd in undo_stack:
-        undo_stack.pop().undo() # Now it's bar.txt
-        undo_stack.pop().undo() # and back to foo.txt
+        # they can be executed later on
+        for cmd in command_stack:
+            cmd.execute()
+
+        # and can also be undone at will
+        for cmd in reversed(command_stack):
+            cmd.undo()
+    finally:
+        os.unlink("foo.txt")
+
+if __name__ == "__main__":
+    main()
+
+### OUTPUT ###
+# renaming foo.txt to bar.txt
+# renaming bar.txt to baz.txt
+# renaming baz.txt to bar.txt
+# renaming bar.txt to foo.txt

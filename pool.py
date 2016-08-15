@@ -1,49 +1,61 @@
-'''http://stackoverflow.com/questions/1514120/python-implementation-of-the-object-pool-design-pattern'''
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-class qObj():   
-    _q = None   
-    o = None    
+"""http://stackoverflow.com/questions/1514120/python-implementation-of-the-object-pool-design-pattern"""
 
-    def __init__(self, dQ, autoGet = False):       
-        self._q = dQ        
-        
-        if autoGet == True:           
-            self.o = self._q.get()    
 
-    def __enter__(self):       
-        if self.o == None:           
-            self.o = self._q.get()           
-        return self.o     
+class QueueObject():
 
-    def __exit__(self, type, value, traceback):       
-        if self.o != None:           
-            self._q.put(self.o)           
-            self.o = None    
+    def __init__(self, queue, auto_get=False):
+        self._queue = queue
+        self.object = self._queue.get() if auto_get else None
 
-    def __del__(self):       
-        if self.o != None:           
-            self._q.put(self.o)           
-            self.o = None   
+    def __enter__(self):
+        if self.object is None:
+            self.object = self._queue.get()
+        return self.object
 
-if __name__ == "__main__":   
-    import queue    
+    def __exit__(self, Type, value, traceback):
+        if self.object is not None:
+            self._queue.put(self.object)
+            self.object = None
 
-    def testObj(Q):       
-        someObj = qObj(Q, True)        
-        print('Inside func: {}'.format(someObj.o))    
+    def __del__(self):
+        if self.object is not None:
+            self._queue.put(self.object)
+            self.object = None
 
-    aQ = queue.Queue()    
-    aQ.put("yam")    
 
-    with qObj(aQ) as obj:       
-        print("Inside with: {}".format(obj))    
+def main():
+    try:
+        import queue
+    except ImportError:  # python 2.x compatibility
+        import Queue as queue
 
-    print('Outside with: {}'.format(aQ.get()))
+    def test_object(queue):
+        queue_object = QueueObject(queue, True)
+        print('Inside func: {}'.format(queue_object.object))
 
-    aQ.put("sam")
-    testObj(aQ)
+    sample_queue = queue.Queue()
 
-    print('Outside func: {}'.format(aQ.get()))
+    sample_queue.put('yam')
+    with QueueObject(sample_queue) as obj:
+        print('Inside with: {}'.format(obj))
+    print('Outside with: {}'.format(sample_queue.get()))
 
-    if not aQ.empty():
-        print(aQ.get())
+    sample_queue.put('sam')
+    test_object(sample_queue)
+    print('Outside func: {}'.format(sample_queue.get()))
+
+    if not sample_queue.empty():
+        print(sample_queue.get())
+
+
+if __name__ == '__main__':
+    main()
+
+### OUTPUT ###
+# Inside with: yam
+# Outside with: yam
+# Inside func: sam
+# Outside func: sam
